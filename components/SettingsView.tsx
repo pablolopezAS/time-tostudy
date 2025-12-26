@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserProfile } from '../types';
-import { User, GraduationCap, Calendar, ShieldCheck, Mail, Lock, MessageSquare, Sparkles, Send, CheckCircle2, Loader2, LogOut } from 'lucide-react';
+import { User, GraduationCap, Calendar, ShieldCheck, Mail, Lock, MessageSquare, Sparkles, Send, CheckCircle2, Loader2, LogOut, Eye, EyeOff, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SettingsViewProps {
@@ -16,6 +16,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
   const [supportMessage, setSupportMessage] = useState('');
   const [isSent, setIsSent] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passUpdateStatus, setPassUpdateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   const educationLevels = [
     'ESO',
@@ -49,6 +52,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
       console.error('Error auto-saving:', err);
     } finally {
       setTimeout(() => setUpdating(false), 500);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setPassUpdateStatus('loading');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPassUpdateStatus('success');
+      setNewPassword('');
+      setTimeout(() => setPassUpdateStatus('idle'), 3000);
+    } catch (err: any) {
+      console.error('Error updating password:', err);
+      setPassUpdateStatus('error');
+      setTimeout(() => setPassUpdateStatus('idle'), 3000);
     }
   };
 
@@ -115,17 +138,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
 
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Correo Electrónico</label>
-              <div className="relative">
-                <input
-                  type="email"
-                  name="email"
-                  value={profile.email || ''}
-                  disabled
-                  title="El correo no se puede cambiar"
-                  placeholder="estudiante@ejemplo.com"
-                  className="w-full px-6 py-4 bg-slate-100/50 rounded-2xl outline-none border-2 border-transparent font-bold text-slate-400 shadow-inner cursor-not-allowed"
-                />
-                <Mail size={16} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300" />
+              <div className="px-6 py-4 bg-slate-100/50 rounded-2xl border-2 border-transparent font-bold text-slate-600 shadow-inner flex items-center justify-between">
+                <span>{profile.email || ''}</span>
+                <Mail size={16} className="text-slate-300" />
               </div>
             </div>
 
@@ -174,6 +189,59 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
               <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-tight leading-relaxed">
                 Esta información nos ayuda a adaptar tus futuras recomendaciones de estudio y estadísticas.
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECCIÓN SEGURIDAD */}
+        <section className="md:col-span-2 glass rounded-[2.5rem] p-8 border border-white/60 space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <ShieldCheck size={20} className="text-indigo-500" />
+            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Seguridad</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="col-span-1 space-y-4">
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+                <ShieldAlert size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                  Cambiar tu contraseña es una medida de seguridad importante. Asegúrate de usar una contraseña difícil de adivinar.
+                </p>
+              </div>
+            </div>
+
+            <div className="col-span-2 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Nueva Contraseña</label>
+                <div className="relative group">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Escribe tu nueva contraseña..."
+                    className="w-full px-6 py-4 bg-white/50 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-300 transition-all font-bold text-slate-700 shadow-inner pr-14"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors p-1"
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleUpdatePassword}
+                disabled={passUpdateStatus === 'loading' || !newPassword}
+                className={`w-full py-4 rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg transition-all flex items-center justify-center gap-3 ${passUpdateStatus === 'success' ? 'bg-emerald-500 text-white shadow-emerald-100' : passUpdateStatus === 'error' ? 'bg-rose-500 text-white shadow-rose-100' : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700 active:scale-95'
+                  }`}
+              >
+                {passUpdateStatus === 'loading' && <Loader2 size={16} className="animate-spin" />}
+                {passUpdateStatus === 'success' && <><CheckCircle2 size={16} /> Contraseña actualizada</>}
+                {passUpdateStatus === 'error' && <><ShieldAlert size={16} /> Error al actualizar</>}
+                {passUpdateStatus === 'idle' && <>Actualizar Contraseña</>}
+              </button>
             </div>
           </div>
         </section>
