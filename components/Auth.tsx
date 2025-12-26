@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, Sparkles, Eye, EyeOff, CheckCircle2, X } from 'lucide-react';
 
 interface AuthProps {
     onSuccess: () => void;
@@ -14,6 +14,8 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
     const [password, setPassword] = useState('');
     const [isLogin, setIsLogin] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showRegisterSuccess, setShowRegisterSuccess] = useState(false);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -24,17 +26,28 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
             if (isLogin) {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
+                onSuccess();
             } else {
-                const { error } = await supabase.auth.signUp({ email, password });
+                const { error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: 'https://time-tostudy.vercel.app/'
+                    }
+                });
                 if (error) throw error;
-                alert('Revisa tu correo para confirmar tu cuenta (aunque el administrador lo activará después)');
+                setShowRegisterSuccess(true);
             }
-            onSuccess();
         } catch (err: any) {
             setError(err.message || 'Ocurrió un error inesperado');
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleDismissSuccess = () => {
+        setShowRegisterSuccess(false);
+        window.location.reload();
     };
 
     return (
@@ -81,13 +94,20 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
                         <div className="relative group">
                             <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 placeholder="Contraseña"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full pl-12 pr-6 py-4 bg-white/60 border border-white/60 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium text-slate-600"
+                                className="w-full pl-12 pr-12 py-4 bg-white/60 border border-white/60 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium text-slate-600"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors p-1"
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
                         </div>
                     </div>
 
@@ -120,7 +140,10 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
 
                 <div className="mt-10 pt-8 border-t border-white/60 text-center">
                     <button
-                        onClick={() => setIsLogin(!isLogin)}
+                        onClick={() => {
+                            setIsLogin(!isLogin);
+                            setError(null);
+                        }}
                         className="text-slate-500 text-sm font-bold flex items-center justify-center gap-2 mx-auto hover:text-indigo-600 transition-colors"
                     >
                         {isLogin ? (
@@ -131,8 +154,49 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
                     </button>
                 </div>
             </motion.div>
+
+            <AnimatePresence>
+                {showRegisterSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[2000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            className="relative w-full max-w-sm glass rounded-[2.5rem] p-10 shadow-2xl border border-white/40 text-center"
+                        >
+                            <button
+                                onClick={handleDismissSuccess}
+                                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+
+                            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                <CheckCircle2 size={40} />
+                            </div>
+
+                            <h2 className="text-2xl font-bold text-slate-800 mb-4">¡Casi listo!</h2>
+                            <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
+                                Te hemos enviado un correo de confirmación de <span className="text-indigo-600 font-bold">Supabase</span>. Por favor, revisa tu bandeja de entrada para verificar tu cuenta.
+                            </p>
+
+                            <button
+                                onClick={handleDismissSuccess}
+                                className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95"
+                            >
+                                Continuar
+                            </button>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
 
 export default Auth;
+
