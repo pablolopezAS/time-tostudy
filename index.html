@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeToStudy - Focus with Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+        .mesh-gradient {
+            background: linear-gradient(135deg, #e6e6fa 0%, #f0fff4 25%, #fff5f5 50%, #f0f7ff 75%, #e6e6fa 100%);
+            background-size: 400% 400%;
+            animation: meshAnimation 15s ease infinite;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        @keyframes meshAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .neumorphic-in {
+            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.05), inset -4px -4px 8px rgba(255, 255, 255, 0.8);
+        }
+        .neumorphic-out {
+            box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.05), -6px -6px 12px rgba(255, 255, 255, 0.8);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        /* Estilos específicos para impresión (PDF) */
+        @media print {
+            /* Forzar que los contenedores de la App se expandan */
+            html, body, #root, .h-screen, main, .overflow-hidden {
+                height: auto !important;
+                overflow: visible !important;
+                position: relative !important;
+                display: block !important;
+            }
+            
+            .no-print, nav, aside, button, .mesh-gradient, .no-print * {
+                display: none !important;
+            }
+            
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0;
+                margin: 0;
+            }
+            
+            .print-only {
+                display: block !important;
+            }
+            
+            .glass {
+                background: transparent !important;
+                border: 1px solid #eee !important;
+                backdrop-filter: none !important;
+                box-shadow: none !important;
+            }
+            
+            .page-break {
+                page-break-after: always;
+                margin-top: 2rem;
+            }
+            
+            .text-indigo-600, .text-indigo-500 {
+                color: #4f46e5 !important;
+            }
+            
+            /* Asegurar que las barras de progreso se vean en el PDF */
+            .bg-indigo-400, .bg-emerald-400 {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "framer-motion": "https://esm.sh/framer-motion@^12.23.26",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "motion/": "https://esm.sh/motion@^12.23.26/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="text-slate-800">
+    <div class="mesh-gradient"></div>
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
