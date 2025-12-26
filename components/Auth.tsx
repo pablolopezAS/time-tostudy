@@ -35,7 +35,12 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
                         emailRedirectTo: 'https://time-tostudy.vercel.app/'
                     }
                 });
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('User already registered') || error.message.includes('already exists')) {
+                        throw new Error('Este correo ya está registrado en el sistema. Por favor, inicia sesión.');
+                    }
+                    throw error;
+                }
                 setShowRegisterSuccess(true);
             }
         } catch (err: any) {
@@ -199,4 +204,3 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
 };
 
 export default Auth;
-
