@@ -51,10 +51,10 @@ const App: React.FC = () => {
   const [activeTour, setActiveTour] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        fetchInitialData(session.user.id);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession) {
+        fetchInitialData(initialSession.user.id, initialSession.user.email);
       } else {
         setLoading(false);
       }
@@ -63,7 +63,7 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
-        fetchInitialData(session.user.id);
+        fetchInitialData(session.user.id, session.user.email);
       } else {
         setLoading(false);
       }
@@ -72,7 +72,7 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchInitialData = async (userId: string) => {
+  const fetchInitialData = async (userId: string, userEmail?: string) => {
     setLoading(true);
     try {
       // 1. Fetch Profile
@@ -89,7 +89,7 @@ const App: React.FC = () => {
             name: profileData.full_name,
             age: profileData.age,
             educationLevel: profileData.education_level,
-            email: session?.user?.email
+            email: userEmail || profileData.email
           }
         }));
       } else {
@@ -186,7 +186,12 @@ const App: React.FC = () => {
     const newTourState = { ...state.tourState, [tourKey]: true };
     setState(prev => ({ ...prev, tourState: newTourState }));
     setActiveTour(null);
-    await supabase.from('user_settings').update({ tour_state: newTourState }).eq('user_id', session.user.id);
+    if (session?.user?.id) {
+      await supabase.from('user_settings').upsert({
+        user_id: session.user.id,
+        tour_state: newTourState
+      });
+    }
   };
 
   const toggleFullScreen = () => {
@@ -501,4 +506,3 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: any; lab
 );
 
 export default App;
-
