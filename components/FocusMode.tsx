@@ -38,6 +38,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   const [isBreakActive, setIsBreakActive] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastTickRef = useRef<number>(Date.now());
 
   const secondsRef = useRef(0);
   const pauseSecondsRef = useRef(0);
@@ -81,7 +82,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       if (!isPaused && !showPauseModal && secondsRef.current > 0) {
         if (onAutoSave) {
           const sessionUpdate: Session = {
-            id: Date.now().toString(), // Using current timestamp for local tracking, Supabase will handle persistence
+            id: Date.now().toString(),
             subjectId: subject.id,
             topicId: topic.id,
             date: new Date().toISOString(),
@@ -90,37 +91,59 @@ const FocusMode: React.FC<FocusModeProps> = ({
             notes: notesRef.current + " (Auto-guardado periódico)",
             mode: mode
           };
-          // We mark it as auto-save so we don't accidentally create duplicate final sessions
-          // if we handle it differently in App.tsx. 
-          // Actually, let's just use it as requested.
           onAutoSave(sessionUpdate);
         }
       }
-    }, 30000); // Every 30 seconds
+    }, 30000);
 
-    timerRef.current = setInterval(() => {
-      if (!isPaused && !showPauseModal) {
-        if (mode === 'free') {
-          setSeconds(s => s + 1);
-        } else {
-          setSeconds(s => s + 1);
-          setPhaseTimeLeft(t => {
-            if (t <= 1) {
-              const nextPhase = phase === 'study' ? 'break' : 'study';
-              setPhase(nextPhase);
-              return (nextPhase === 'study' ? intervalConfig.studyMinutes : intervalConfig.breakMinutes) * 60;
-            }
-            return t - 1;
-          });
+    const updateTimer = () => {
+      const now = Date.now();
+      const delta = Math.floor((now - lastTickRef.current) / 1000);
+
+      if (delta >= 1) {
+        lastTickRef.current = now;
+
+        if (!isPaused && !showPauseModal) {
+          if (mode === 'free') {
+            setSeconds(s => s + delta);
+          } else {
+            setSeconds(s => s + delta);
+            setPhaseTimeLeft(t => {
+              const newTime = t - delta;
+              if (newTime <= 0) {
+                // If the drift was large, we might skip a break, but for now just toggle
+                const nextPhase = phase === 'study' ? 'break' : 'study';
+                setPhase(nextPhase);
+                return (nextPhase === 'study' ? intervalConfig.studyMinutes : intervalConfig.breakMinutes) * 60;
+              }
+              return newTime;
+            });
+          }
+        } else if (isBreakActive || (isPaused && mode === 'free' && !showPauseModal)) {
+          setPauseSeconds(p => p + delta);
         }
-      } else if (isBreakActive || (isPaused && mode === 'free' && !showPauseModal)) {
-        setPauseSeconds(p => p + 1);
       }
-    }, 1000);
+    };
+
+    lastTickRef.current = Date.now();
+    timerRef.current = setInterval(updateTimer, 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Force update when coming back from background
+        updateTimer();
+      } else {
+        // Update accurately just before going to background
+        updateTimer();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       clearInterval(heartbeat);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isPaused, mode, phase, intervalConfig, showPauseModal, isBreakActive, onAutoSave, subject.id, topic.id]);
 
