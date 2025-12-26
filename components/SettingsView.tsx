@@ -351,4 +351,3 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
 };
 
 export default SettingsView;
-
