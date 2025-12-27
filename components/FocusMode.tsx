@@ -18,31 +18,32 @@ interface FocusModeProps {
   initialStyle: TimerStyle;
   onStyleChange: (s: TimerStyle) => void;
   onAutoSave?: (session: Session) => void;
+  restoredSession?: any;
 }
 
 const STYLES: TimerStyle[] = ['minimalist', 'circular', 'flip', 'vertical', 'orbital', 'typographic'];
 
 const FocusMode: React.FC<FocusModeProps> = ({
-  subject, topic, mode, intervalConfig, onEnd, onCancel, initialStyle, onStyleChange, onAutoSave
+  subject, topic, mode, intervalConfig, onEnd, onCancel, initialStyle, onStyleChange, onAutoSave, restoredSession
 }) => {
-  const [seconds, setSeconds] = useState(0);
-  const [pauseSeconds, setPauseSeconds] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [seconds, setSeconds] = useState(restoredSession?.seconds || 0);
+  const [pauseSeconds, setPauseSeconds] = useState(restoredSession?.pauseSeconds || 0);
+  const [isPaused, setIsPaused] = useState(restoredSession?.isPaused || false);
   const [currentStyle, setCurrentStyle] = useState<TimerStyle>(initialStyle);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(restoredSession?.notes || '');
 
-  const [phase, setPhase] = useState<'study' | 'break'>(mode === 'interval' ? 'study' : 'study');
-  const [phaseTimeLeft, setPhaseTimeLeft] = useState(intervalConfig.studyMinutes * 60);
+  const [phase, setPhase] = useState<'study' | 'break'>(restoredSession?.phase || 'study');
+  const [phaseTimeLeft, setPhaseTimeLeft] = useState(restoredSession?.phaseTimeLeft !== undefined ? restoredSession.phaseTimeLeft : intervalConfig.studyMinutes * 60);
 
   const [showPauseModal, setShowPauseModal] = useState(false);
-  const [isBreakActive, setIsBreakActive] = useState(false);
+  const [isBreakActive, setIsBreakActive] = useState(restoredSession?.isBreakActive || false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickRef = useRef<number>(Date.now());
 
-  const secondsRef = useRef(0);
-  const pauseSecondsRef = useRef(0);
-  const notesRef = useRef('');
+  const secondsRef = useRef(restoredSession?.seconds || 0);
+  const pauseSecondsRef = useRef(restoredSession?.pauseSeconds || 0);
+  const notesRef = useRef(restoredSession?.notes || '');
 
   useEffect(() => {
     secondsRef.current = seconds;
@@ -78,6 +79,25 @@ const FocusMode: React.FC<FocusModeProps> = ({
   }, [onAutoSave, subject.id, topic.id, mode]);
 
   useEffect(() => {
+    const saveState = () => {
+      const state = {
+        subjectId: subject.id,
+        topicId: topic.id,
+        mode,
+        seconds: secondsRef.current,
+        pauseSeconds: pauseSecondsRef.current,
+        isPaused,
+        isBreakActive,
+        phase,
+        phaseTimeLeft,
+        notes: notesRef.current,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('activeFocusSession', JSON.stringify(state));
+    };
+
+    saveState();
+
     const heartbeat = setInterval(() => {
       if (!isPaused && !showPauseModal && secondsRef.current > 0) {
         if (onAutoSave) {
@@ -111,7 +131,6 @@ const FocusMode: React.FC<FocusModeProps> = ({
             setPhaseTimeLeft(t => {
               const newTime = t - delta;
               if (newTime <= 0) {
-                // If the drift was large, we might skip a break, but for now just toggle
                 const nextPhase = phase === 'study' ? 'break' : 'study';
                 setPhase(nextPhase);
                 return (nextPhase === 'study' ? intervalConfig.studyMinutes : intervalConfig.breakMinutes) * 60;
@@ -122,6 +141,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
         } else if (isBreakActive || (isPaused && mode === 'free' && !showPauseModal)) {
           setPauseSeconds(p => p + delta);
         }
+        saveState();
       }
     };
 
@@ -130,10 +150,8 @@ const FocusMode: React.FC<FocusModeProps> = ({
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        // Force update when coming back from background
         updateTimer();
       } else {
-        // Update accurately just before going to background
         updateTimer();
       }
     };
@@ -145,7 +163,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isPaused, mode, phase, intervalConfig, showPauseModal, isBreakActive, onAutoSave, subject.id, topic.id]);
+  }, [isPaused, mode, phase, intervalConfig, showPauseModal, isBreakActive, onAutoSave, subject.id, topic.id, phaseTimeLeft]);
 
   const handlePauseClick = () => {
     if (mode === 'free' && !isPaused) {
@@ -157,6 +175,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   };
 
   const handleStop = () => {
+    localStorage.removeItem('activeFocusSession');
     onEnd({ subjectId: subject.id, topicId: topic.id, duration: seconds, pauseDuration: pauseSeconds, notes, mode });
   };
 
@@ -191,7 +210,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
   return (
     <div className={`h-full flex flex-col transition-colors duration-700 ${mode === 'interval' && phase === 'break' ? 'bg-amber-50/50' : 'bg-white/30'} backdrop-blur-md overflow-hidden`}>
       <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/40 shrink-0">
-        <button onClick={onCancel} className="p-2 hover:bg-white/50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
+        <button onClick={() => { localStorage.removeItem('activeFocusSession'); onCancel(); }} className="p-2 hover:bg-white/50 rounded-full text-slate-400 hover:text-rose-500 transition-colors"><X size={20} /></button>
         <div className="flex flex-col items-center">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full animate-pulse ${mode === 'interval' && phase === 'break' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
@@ -309,3 +328,4 @@ const FocusMode: React.FC<FocusModeProps> = ({
 };
 
 export default FocusMode;
+
