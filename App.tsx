@@ -302,13 +302,15 @@ const App: React.FC = () => {
   };
 
   const startSession = (subjectId: string, topicId: string, mode: SessionMode, config?: IntervalConfig) => {
+    localStorage.removeItem('activeFocusSession');
     setState(prev => ({
       ...prev,
       view: 'focus',
       activeSubjectId: subjectId,
       activeTopicId: topicId,
       intervalConfig: config || prev.intervalConfig,
-      lastSession: { mode, subjectId, topicId }
+      lastSession: { mode, subjectId, topicId },
+      restoredSession: undefined
     }));
   };
 
@@ -578,4 +580,3 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: any; lab
 );
 
 export default App;
-
