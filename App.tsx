@@ -154,6 +154,74 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!session || state.subjects.length === 0) return;
+
+    const savedSession = localStorage.getItem('activeFocusSession');
+    if (savedSession) {
+      try {
+        const data = JSON.parse(savedSession);
+        const subject = state.subjects.find(s => s.id === data.subjectId);
+        const topic = subject?.topics.find(t => t.id === data.topicId);
+
+        if (subject && topic) {
+          const now = Date.now();
+          const drift = Math.floor((now - data.timestamp) / 1000);
+
+          let updatedSeconds = data.seconds;
+          let updatedPauseSeconds = data.pauseSeconds;
+          let updatedPhaseTimeLeft = data.phaseTimeLeft;
+          let updatedPhase = data.phase;
+
+          if (!data.isPaused) {
+            if (data.mode === 'free') {
+              updatedSeconds += drift;
+            } else {
+              let remainingDrift = drift;
+              let currentPhase = data.phase;
+              let timeLeft = data.phaseTimeLeft;
+
+              while (remainingDrift > 0) {
+                if (remainingDrift < timeLeft) {
+                  timeLeft -= remainingDrift;
+                  remainingDrift = 0;
+                } else {
+                  remainingDrift -= timeLeft;
+                  currentPhase = currentPhase === 'study' ? 'break' : 'study';
+                  timeLeft = (currentPhase === 'study' ? state.intervalConfig.studyMinutes : state.intervalConfig.breakMinutes) * 60;
+                }
+              }
+              updatedSeconds += drift;
+              updatedPhase = currentPhase;
+              updatedPhaseTimeLeft = timeLeft;
+            }
+          } else if (data.isBreakActive) {
+            updatedPauseSeconds += drift;
+          }
+
+          setState(prev => ({
+            ...prev,
+            view: 'focus',
+            activeSubjectId: data.subjectId,
+            activeTopicId: data.topicId,
+            restoredSession: {
+              ...data,
+              seconds: updatedSeconds,
+              pauseSeconds: updatedPauseSeconds,
+              phase: updatedPhase,
+              phaseTimeLeft: updatedPhaseTimeLeft
+            }
+          }));
+        } else {
+          localStorage.removeItem('activeFocusSession');
+        }
+      } catch (e) {
+        console.error("Error restoring session", e);
+        localStorage.removeItem('activeFocusSession');
+      }
+    }
+  }, [session, state.subjects, state.intervalConfig]);
+
+  useEffect(() => {
     const handleFullScreenChange = () => {
       setIsFullScreen(!!document.fullscreenElement);
     };
@@ -401,8 +469,12 @@ const App: React.FC = () => {
               setState(prev => ({ ...prev, timerStyle: s }));
               await supabase.from('user_settings').update({ timer_style: s }).eq('user_id', session.user.id);
             }}
-            onCancel={() => navigateTo('dashboard')}
+            onCancel={() => {
+              setState(prev => ({ ...prev, restoredSession: undefined }));
+              navigateTo('dashboard');
+            }}
             onAutoSave={handleAutoSave}
+            restoredSession={state.restoredSession}
           />
         );
       case 'summary':
@@ -506,3 +578,4 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: any; lab
 );
 
 export default App;
+
