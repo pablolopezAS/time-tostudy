@@ -95,9 +95,10 @@ const FocusMode: React.FC<FocusModeProps> = ({
       };
       localStorage.setItem('activeFocusSession', JSON.stringify(state));
     };
-
     saveState();
+  }, [isPaused, mode, phase, phaseTimeLeft, isBreakActive, subject.id, topic.id]);
 
+  useEffect(() => {
     const heartbeat = setInterval(() => {
       if (!isPaused && !showPauseModal && secondsRef.current > 0) {
         if (onAutoSave) {
@@ -141,7 +142,6 @@ const FocusMode: React.FC<FocusModeProps> = ({
         } else if (isBreakActive || (isPaused && mode === 'free' && !showPauseModal)) {
           setPauseSeconds(p => p + delta);
         }
-        saveState();
       }
     };
 
@@ -150,8 +150,6 @@ const FocusMode: React.FC<FocusModeProps> = ({
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        updateTimer();
-      } else {
         updateTimer();
       }
     };
@@ -163,7 +161,7 @@ const FocusMode: React.FC<FocusModeProps> = ({
       clearInterval(heartbeat);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isPaused, mode, phase, intervalConfig, showPauseModal, isBreakActive, onAutoSave, subject.id, topic.id, phaseTimeLeft]);
+  }, [isPaused, mode, phase, intervalConfig, showPauseModal, isBreakActive, onAutoSave, subject.id, topic.id]);
 
   const handlePauseClick = () => {
     if (mode === 'free' && !isPaused) {
@@ -328,4 +326,3 @@ const FocusMode: React.FC<FocusModeProps> = ({
 };
 
 export default FocusMode;
-
