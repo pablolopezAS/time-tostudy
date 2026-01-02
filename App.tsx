@@ -22,6 +22,7 @@ import SettingsView from './components/SettingsView';
 import OnboardingOverlay from './components/OnboardingOverlay';
 import GuidedTour from './components/GuidedTour';
 import Auth from './components/Auth';
+import TermsAndConditions from './components/TermsAndConditions';
 import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
@@ -49,6 +50,8 @@ const App: React.FC = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [activeTour, setActiveTour] = useState<string | null>(null);
+  const [tourStateLoaded, setTourStateLoaded] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
@@ -89,9 +92,15 @@ const App: React.FC = () => {
             name: profileData.full_name,
             age: profileData.age,
             educationLevel: profileData.education_level,
-            email: userEmail || profileData.email
+            email: userEmail || profileData.email,
+            termsAccepted: profileData.terms_accepted
           }
         }));
+
+        // Check if user has accepted terms
+        if (!profileData.terms_accepted) {
+          setShowTerms(true);
+        }
       } else {
         // No profile? Show onboarding
         setShowOnboarding(true);
@@ -113,6 +122,9 @@ const App: React.FC = () => {
           tourState: settingsData.tour_state as Record<string, boolean> || {}
         }));
       }
+
+      // Mark tour state as loaded after settings are fetched
+      setTourStateLoaded(true);
 
       // 3. Fetch Subjects & Topics
       const { data: subjectsData } = await supabase
@@ -230,23 +242,44 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!session || showOnboarding) return;
+    if (!session || showOnboarding || !tourStateLoaded) return;
 
     const tourKey = `tour_${state.view}`;
     const alreadySeen = state.tourState[tourKey];
 
-    // Only show tour if not already seen and onboarding is not active
-    if (!alreadySeen && !showOnboarding) {
+    // Only show tour if not already seen, onboarding is not active, and tour state is loaded
+    if (!alreadySeen && !showOnboarding && tourStateLoaded) {
       const timer = setTimeout(() => {
         setActiveTour(state.view);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [state.view, showOnboarding, session, state.tourState]);
+  }, [state.view, showOnboarding, session, state.tourState, tourStateLoaded]);
 
   const handleFinishOnboarding = () => {
     setShowOnboarding(false);
     if (session) fetchInitialData(session.user.id);
+  };
+
+  const handleAcceptTerms = async () => {
+    if (!session?.user?.id) return;
+
+    // Update profile in database
+    await supabase
+      .from('profiles')
+      .update({ terms_accepted: true })
+      .eq('id', session.user.id);
+
+    // Update local state
+    setState(prev => ({
+      ...prev,
+      userProfile: {
+        ...prev.userProfile!,
+        termsAccepted: true
+      }
+    }));
+
+    setShowTerms(false);
   };
 
   const handleFinishTour = async (tourName: string) => {
@@ -527,6 +560,10 @@ const App: React.FC = () => {
   return (
     <div className="relative h-screen w-full flex flex-col md:flex-row overflow-hidden bg-slate-50/50">
       <AnimatePresence>
+        {showTerms && <TermsAndConditions onAccept={handleAcceptTerms} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showOnboarding && <OnboardingOverlay onComplete={handleFinishOnboarding} />}
       </AnimatePresence>
 
@@ -580,3 +617,4 @@ const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: any; lab
 );
 
 export default App;
+
