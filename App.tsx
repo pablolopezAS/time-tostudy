@@ -22,8 +22,8 @@ import SettingsView from './components/SettingsView';
 import OnboardingOverlay from './components/OnboardingOverlay';
 import GuidedTour from './components/GuidedTour';
 import Auth from './components/Auth';
-import LandingPage from './components/LandingPage';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
+import WelcomeView from './components/WelcomeView';
+import PWAButton from './components/PWAButton';
 import LegalTerms from './components/LegalTerms';
 import { supabase } from './lib/supabase';
 
@@ -567,7 +567,7 @@ const App: React.FC = () => {
   }
 
   if (!session) {
-    return <LandingPage onAuthSuccess={() => { }} />;
+    return <WelcomeView onAuthSuccess={() => { }} />;
   }
 
   return (
@@ -603,7 +603,7 @@ const App: React.FC = () => {
 
       <main className="flex-1 overflow-hidden relative min-h-0">
         <div className="absolute top-4 right-4 z-[100]">
-          <PWAInstallPrompt />
+          <PWAButton />
         </div>
         <AnimatePresence mode="wait">
           <motion.div
