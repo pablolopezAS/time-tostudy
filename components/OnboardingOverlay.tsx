@@ -101,7 +101,7 @@ const OnboardingOverlay: React.FC<OnboardingOverlayProps> = ({ onComplete }) => 
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="relative w-full max-w-lg glass rounded-[3.5rem] p-10 md:p-14 shadow-2xl border border-white/40 overflow-hidden"
+        className="relative w-full max-w-lg bg-white rounded-[3.5rem] p-10 md:p-14 shadow-2xl border border-white/40 overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none" />
 
