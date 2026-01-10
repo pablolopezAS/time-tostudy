@@ -1,0 +1,27 @@
+{
+    "name": "TimeToStudy",
+    "short_name": "TimeToStudy",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#f8fafc",
+    "theme_color": "#4f46e5",
+    "description": "Domina tu tiempo de estudio. Alcanza tus metas.",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "icon.svg",
+            "type": "image/svg+xml",
+            "sizes": "any"
+        },
+        {
+            "src": "icon.svg",
+            "type": "image/svg+xml",
+            "sizes": "192x192"
+        },
+        {
+            "src": "icon.svg",
+            "type": "image/svg+xml",
+            "sizes": "512x512"
+        }
+    ]
+}
