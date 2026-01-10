@@ -52,6 +52,15 @@ const App: React.FC = () => {
   const [activeTour, setActiveTour] = useState<string | null>(null);
   const [tourStateLoaded, setTourStateLoaded] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
@@ -535,6 +544,8 @@ const App: React.FC = () => {
               setState(prev => ({ ...prev, intervalPresets: p }));
               await supabase.from('user_settings').update({ interval_presets: p }).eq('user_id', session.user.id);
             }}
+            theme={theme}
+            onThemeChange={setTheme}
           />
         );
       default:
@@ -558,7 +569,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="relative h-screen w-full flex flex-col md:flex-row overflow-hidden bg-slate-50/50">
+    <div className="relative h-screen w-full flex flex-col md:flex-row overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 dark:text-slate-200 transition-colors duration-300">
       <AnimatePresence>
         {showTerms && <TermsAndConditions onAccept={handleAcceptTerms} />}
       </AnimatePresence>
