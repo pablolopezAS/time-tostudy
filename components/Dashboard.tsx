@@ -358,8 +358,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                               <button
                                 onClick={() => setIntervalSettings({ studyMinutes: preset.studyMinutes, breakMinutes: preset.breakMinutes })}
                                 className={`w-full flex items-center justify-between p-6 rounded-[2rem] border-2 transition-all ${intervalSettings.studyMinutes === preset.studyMinutes && intervalSettings.breakMinutes === preset.breakMinutes
-                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl'
-                                    : 'bg-white text-slate-600 border-white hover:border-indigo-100 shadow-sm'
+                                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xl'
+                                  : 'bg-white text-slate-600 border-white hover:border-indigo-100 shadow-sm'
                                   }`}
                               >
                                 <div className="text-left">
@@ -425,7 +425,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-3">
                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Color Temático</p>
                   <div className="grid grid-cols-5 gap-3">
-                    {subjectColors.map(color => (
+                    {subjectColors.filter(c => !subjects.some(s => s.color === c) || selectedColor === c).map(color => (
                       <button
                         key={color} onClick={() => setSelectedColor(color)}
                         className={`aspect-square rounded-xl flex items-center justify-center transition-all ${selectedColor === color ? 'scale-110 ring-4 ring-white shadow-xl' : 'opacity-60 hover:opacity-100 hover:scale-105'}`}
