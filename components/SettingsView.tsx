@@ -1,292 +1,402 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Session, Subject } from '../types';
-import { BarChart3, TrendingUp, BookOpen, X, Maximize2 } from 'lucide-react';
+import { UserProfile } from '../types';
+import { User, GraduationCap, Calendar, ShieldCheck, Mail, Lock, MessageSquare, Sparkles, Send, CheckCircle2, Loader2, LogOut, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-interface StatsViewProps {
-  sessions: Session[];
-  subjects: Subject[];
+interface SettingsViewProps {
+  profile: UserProfile;
+  onUpdate: (profile: UserProfile) => void;
+  onIntervalPresetsUpdate: (presets: any[]) => void;
+  theme: 'light' | 'dark';
+  onThemeChange: (theme: 'light' | 'dark') => void;
 }
 
-const StatsView: React.FC<StatsViewProps> = ({ sessions, subjects }) => {
-  const [zoomedGraph, setZoomedGraph] = useState<'total' | 'subject' | null>(null);
+const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onIntervalPresetsUpdate, theme, onThemeChange }) => {
+  const [supportType, setSupportType] = useState<'support' | 'feature'>('support');
+  const [supportMessage, setSupportMessage] = useState('');
+  const [isSent, setIsSent] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passUpdateStatus, setPassUpdateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  const getWeekNumber = (d: Date) => {
-    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = date.getUTCDay() || 7;
-    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-    return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  const educationLevels = [
+    'ESO',
+    'Bachillerato',
+    'Universidad',
+    'Oposiciones',
+    'Máster/Doctorado',
+    'Otros'
+  ];
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    const newProfile = { ...profile, [name]: value };
+    onUpdate(newProfile);
+
+    // Auto-save to Supabase
+    setUpdating(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase.from('profiles').upsert({
+          id: user.id,
+          full_name: name === 'name' ? value : profile.name,
+          age: name === 'age' ? value : profile.age,
+          education_level: name === 'educationLevel' ? value : profile.educationLevel,
+          updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error('Error auto-saving:', err);
+    } finally {
+      setTimeout(() => setUpdating(false), 500);
+    }
   };
 
-  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
 
-  const statsData = useMemo(() => {
-    // Agrupar por mes y semana
-    const totalByWeek: Record<string, number> = {};
-    const subjectByWeek: Record<string, Record<string, number>> = {};
-    
-    sessions.forEach(s => {
-      const date = new Date(s.date);
-      const week = getWeekNumber(date);
-      const month = date.getMonth();
-      const key = `${month}-${week}`;
-
-      totalByWeek[key] = (totalByWeek[key] || 0) + s.duration;
-      
-      if (!subjectByWeek[s.subjectId]) subjectByWeek[s.subjectId] = {};
-      subjectByWeek[s.subjectId][key] = (subjectByWeek[s.subjectId][key] || 0) + s.duration;
-    });
-
-    return { totalByWeek, subjectByWeek };
-  }, [sessions]);
-
-  const DotPlot = ({ data, color, isLarge = false }: { data: Record<string, number>, color: string, isLarge?: boolean }) => {
-    const maxVal = Math.max(...Object.values(data), 3600); // Mínimo 1h para escala
-
-    return (
-      <div className="w-full h-full flex flex-col pt-4">
-        <div className="flex-1 relative border-l border-b border-slate-200/50">
-          {/* Ejes y cuadrícula */}
-          <div className="absolute left-0 bottom-0 w-full h-full pointer-events-none opacity-20">
-             {[0, 0.25, 0.5, 0.75, 1].map(v => (
-               <div key={v} className="absolute w-full border-t border-slate-300" style={{ bottom: `${v * 100}%` }} />
-             ))}
-          </div>
-
-          {/* Puntos */}
-          <div className="absolute inset-0 flex items-end">
-            {months.map((m, mIdx) => (
-              <div key={m} className="flex-1 h-full flex items-end relative border-r border-slate-100/30">
-                {/* Visualizar puntos por cada mes (aproximadamente 4 semanas por mes para visualización) */}
-                {[1, 2, 3, 4, 5].map(wOffset => {
-                   // Este es un hack visual para posicionar los puntos secuencialmente
-                   // En una app real usaríamos la semana real del año
-                   const mockWeek = mIdx * 4 + wOffset;
-                   const keys = Object.keys(data).filter(k => k.startsWith(`${mIdx}-`));
-                   const value = keys.length > 0 ? (data[keys[0]] || 0) : 0; // Simplificado para demo
-                   if (value === 0) return null;
-
-                   const intensity = Math.min((value / maxVal) * 100, 100);
-                   const yPos = (value / maxVal) * 85;
-
-                   return (
-                     <motion.div 
-                        key={mockWeek}
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="absolute w-2 h-2 rounded-full cursor-help group"
-                        style={{ 
-                          left: `${(wOffset/5) * 100}%`, 
-                          bottom: `${yPos}%`,
-                          backgroundColor: color,
-                          boxShadow: `0 0 10px ${color}44`,
-                          width: isLarge ? '12px' : '8px',
-                          height: isLarge ? '12px' : '8px'
-                        }}
-                     >
-                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                          <div className="bg-slate-800 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap shadow-xl">
-                            {Math.round(value/60)} min
-                          </div>
-                       </div>
-                     </motion.div>
-                   );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Etiquetas X */}
-        <div className="flex justify-between mt-2 px-1">
-          {months.map(m => (
-            <span key={m} className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-tighter">{m}</span>
-          ))}
-        </div>
-      </div>
-    );
+    setPassUpdateStatus('loading');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPassUpdateStatus('success');
+      setNewPassword('');
+      setTimeout(() => setPassUpdateStatus('idle'), 3000);
+    } catch (err: any) {
+      console.error('Error updating password:', err);
+      setPassUpdateStatus('error');
+      setTimeout(() => setPassUpdateStatus('idle'), 3000);
+    }
   };
 
-  const SubjectDotPlot = ({ isLarge = false }: { isLarge?: boolean }) => {
-    const maxVal = useMemo(() => {
-      let max = 3600;
-      Object.values(statsData.subjectByWeek).forEach(weeks => {
-        Object.values(weeks).forEach(v => { if (v > max) max = v; });
-      });
-      return max;
-    }, [statsData]);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
-    return (
-      <div className="w-full h-full flex flex-col pt-4">
-        <div className="flex-1 relative border-l border-b border-slate-200/50">
-          <div className="absolute inset-0 flex items-end">
-            {months.map((m, mIdx) => (
-              <div key={m} className="flex-1 h-full flex items-end relative border-r border-slate-100/30">
-                {subjects.map((sub, sIdx) => {
-                  const subData = statsData.subjectByWeek[sub.id] || {};
-                  const keys = Object.keys(subData).filter(k => k.startsWith(`${mIdx}-`));
-                  const value = keys.length > 0 ? subData[keys[0]] : 0;
-                  if (!value) return null;
+  const handleSendSupport = async () => {
+    if (!supportMessage.trim()) return;
 
-                  const yPos = (value / maxVal) * 85;
-                  return (
-                    <motion.div 
-                      key={sub.id}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute rounded-full"
-                      style={{ 
-                        left: `${(sIdx / subjects.length) * 100}%`,
-                        bottom: `${yPos}%`,
-                        backgroundColor: sub.color,
-                        width: isLarge ? '10px' : '6px',
-                        height: isLarge ? '10px' : '6px',
-                        zIndex: sIdx
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-between mt-2 px-1">
-          {months.map(m => (
-            <span key={m} className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-tighter">{m}</span>
-          ))}
-        </div>
-      </div>
-    );
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase.from('suggestions').insert({
+          user_id: user.id,
+          user_name: profile.name,
+          type: supportType,
+          message: supportMessage
+        });
+        if (error) throw error;
+
+        setIsSent(true);
+        setTimeout(() => {
+          setIsSent(false);
+          setSupportMessage('');
+        }, 3000);
+      }
+    } catch (err: any) {
+      console.error('Error sending suggestion:', err);
+      alert('Error al enviar: ' + err.message);
+    }
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10 space-y-8 mb-20 md:mb-0">
-      <header>
-        <h1 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Estadísticas</h1>
-        <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1 italic">Analítica de rendimiento temporal</p>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10 pb-40">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase">Ajustes</h1>
+          <p className="text-slate-500 font-medium italic text-sm">Personaliza tu perfil de estudiante.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          {updating && (
+            <div className="flex items-center gap-2 text-indigo-500 text-[10px] font-bold uppercase tracking-widest">
+              <Loader2 size={12} className="animate-spin" /> Guardando...
+            </div>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-xs font-bold hover:bg-rose-100 transition-all"
+          >
+            <LogOut size={14} /> Cerrar Sesión
+          </button>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
-        {/* GRÁFICA TOTAL */}
-        <motion.div 
-          onClick={() => setZoomedGraph('total')}
-          className="glass rounded-[2.5rem] p-8 border border-white/60 shadow-xl hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden h-[400px] flex flex-col"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <TrendingUp size={20} />
-              </div>
-              <h3 className="font-black text-slate-700 uppercase tracking-tight">Estudio Total</h3>
-            </div>
-            <Maximize2 size={18} className="text-slate-300 group-hover:text-indigo-400 transition-colors" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* SECCIÓN PERFIL */}
+        <section className="glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
+          <div className="flex items-center gap-3 mb-2">
+            <User size={20} className="text-indigo-500" />
+            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Información Personal</h2>
           </div>
-          <div className="flex-1">
-            <DotPlot data={statsData.totalByWeek} color="#6366f1" />
-          </div>
-          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mt-4">Puntos por semana / Minutos vs Mes</p>
-        </motion.div>
 
-        {/* GRÁFICA POR ASIGNATURA */}
-        <motion.div 
-          onClick={() => setZoomedGraph('subject')}
-          className="glass rounded-[2.5rem] p-8 border border-white/60 shadow-xl hover:shadow-2xl transition-all cursor-pointer group relative overflow-hidden h-[400px] flex flex-col"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <BookOpen size={20} />
-              </div>
-              <h3 className="font-black text-slate-700 uppercase tracking-tight">Por Asignatura</h3>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Nombre Completo</label>
+              <input
+                type="text"
+                name="name"
+                value={profile.name}
+                onChange={handleChange}
+                placeholder="Escribe tu nombre..."
+                className="w-full px-6 py-4 bg-white/50 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-300 transition-all font-bold text-slate-700 shadow-inner"
+              />
             </div>
-            <Maximize2 size={18} className="text-slate-300 group-hover:text-emerald-400 transition-colors" />
-          </div>
-          <div className="flex-1">
-            <SubjectDotPlot />
-          </div>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {subjects.slice(0, 4).map(s => (
-              <div key={s.id} className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
-                <span className="text-[8px] font-bold text-slate-400 uppercase">{s.name}</span>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Correo Electrónico</label>
+              <div className="px-6 py-4 bg-slate-100/50 rounded-2xl border-2 border-transparent font-bold text-slate-600 shadow-inner flex items-center justify-between">
+                <span>{profile.email || ''}</span>
+                <Mail size={16} className="text-slate-300" />
               </div>
-            ))}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Edad</label>
+              <input
+                type="number"
+                name="age"
+                value={profile.age}
+                onChange={handleChange}
+                placeholder="Ej. 20"
+                className="w-full px-6 py-4 bg-white/50 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-300 transition-all font-bold text-slate-700 shadow-inner"
+              />
+            </div>
           </div>
-        </motion.div>
+        </section>
+
+        {/* SECCIÓN APARIENCIA */}
+        <section className="glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Sparkles size={20} className="text-amber-500" />
+            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Apariencia</h2>
+          </div>
+
+          <div className="space-y-6">
+            <div className="p-4 bg-white/40 rounded-2xl border border-white/60 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-700">Tema de la aplicación</p>
+                <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mt-1">
+                  {theme === 'light' ? 'Modo Claro Activo' : 'Modo Oscuro Activo'}
+                </p>
+              </div>
+              <div className="flex p-1 bg-slate-200 rounded-xl relative">
+                <button
+                  onClick={() => onThemeChange('light')}
+                  className={`p-2 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wider ${theme === 'light' ? 'bg-white text-amber-500 shadow-sm' : 'text-slate-400'}`}
+                >
+                  CLARO
+                </button>
+                <button
+                  onClick={() => onThemeChange('dark')}
+                  className={`p-2 rounded-lg transition-all text-[10px] font-bold uppercase tracking-wider ${theme === 'dark' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400'}`}
+                >
+                  OSCURO
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECCIÓN ESTUDIOS */}
+        <section className="glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
+          <div className="flex items-center gap-3 mb-2">
+            <GraduationCap size={20} className="text-emerald-500" />
+            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Trayectoria Académica</h2>
+          </div>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">¿Qué estás estudiando?</label>
+              <div className="relative">
+                <select
+                  name="educationLevel"
+                  value={profile.educationLevel}
+                  onChange={handleChange}
+                  className="w-full px-6 py-4 bg-white/50 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-300 transition-all font-bold text-slate-700 shadow-inner appearance-none cursor-pointer"
+                >
+                  {educationLevels.map(level => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <GraduationCap size={18} />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+              <p className="text-[9px] text-indigo-400 font-bold uppercase tracking-tight leading-relaxed">
+                Esta información nos ayuda a adaptar tus futuras recomendaciones de estudio y estadísticas.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* SECCIÓN SEGURIDAD */}
+        <section className="md:col-span-2 glass rounded-[2.5rem] p-8 border border-white/60 space-y-6">
+          <div className="flex items-center gap-3 mb-2">
+            <ShieldCheck size={20} className="text-indigo-500" />
+            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Seguridad</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="col-span-1 space-y-4">
+              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+                <ShieldAlert size={20} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                  Cambiar tu contraseña es una medida de seguridad importante. Asegúrate de usar una contraseña difícil de adivinar.
+                </p>
+              </div>
+            </div>
+
+            <div className="col-span-2 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Nueva Contraseña</label>
+                <div className="relative group">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Escribe tu nueva contraseña..."
+                    className="w-full px-6 py-4 bg-white/50 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-300 transition-all font-bold text-slate-700 shadow-inner pr-14"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors p-1"
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={handleUpdatePassword}
+                disabled={passUpdateStatus === 'loading' || !newPassword}
+                className={`w-full py-4 rounded-3xl font-black uppercase tracking-[0.2em] text-[10px] shadow-lg transition-all flex items-center justify-center gap-3 ${passUpdateStatus === 'success' ? 'bg-emerald-500 text-white shadow-emerald-100' : passUpdateStatus === 'error' ? 'bg-rose-500 text-white shadow-rose-100' : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700 active:scale-95'
+                  }`}
+              >
+                {passUpdateStatus === 'loading' && <Loader2 size={16} className="animate-spin" />}
+                {passUpdateStatus === 'success' && <><CheckCircle2 size={16} /> Contraseña actualizada</>}
+                {passUpdateStatus === 'error' && <><ShieldAlert size={16} /> Error al actualizar</>}
+                {passUpdateStatus === 'idle' && <>Actualizar Contraseña</>}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* SECCIÓN ACTIVACIÓN / LICENCIA */}
+        <section className="md:col-span-2 glass rounded-[2.5rem] p-8 border border-white/60">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center shadow-sm">
+                <ShieldCheck size={32} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Estado de la Suscripción</h2>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Información de activación del sistema</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 bg-white/40 px-8 py-4 rounded-3xl border border-white/60">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Fecha de caducidad</span>
+                <span className="text-sm font-black text-slate-400 italic">No disponible</span>
+              </div>
+              <Calendar size={24} className="text-slate-200" />
+            </div>
+          </div>
+        </section>
+
+        {/* SECCIÓN SOPORTE Y SUGERENCIAS */}
+        <section className="md:col-span-2 glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center">
+                <MessageSquare size={20} />
+              </div>
+              <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Soporte y Sugerencias</h2>
+            </div>
+            <Sparkles size={18} className="text-amber-400 animate-pulse" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">¿Cómo podemos ayudarte?</label>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setSupportType('support')}
+                    className={`px-4 py-3 rounded-xl text-xs font-bold transition-all border ${supportType === 'support' ? 'bg-indigo-500 text-white border-indigo-600 shadow-md' : 'bg-white/40 text-slate-500 border-white/60 hover:bg-white'}`}
+                  >
+                    Reportar un problema
+                  </button>
+                  <button
+                    onClick={() => setSupportType('feature')}
+                    className={`px-4 py-3 rounded-xl text-xs font-bold transition-all border ${supportType === 'feature' ? 'bg-indigo-500 text-white border-indigo-600 shadow-md' : 'bg-white/40 text-slate-500 border-white/60 hover:bg-white'}`}
+                  >
+                    Sugerir funcionalidad
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-1">Tu mensaje</label>
+                <div className="relative">
+                  <textarea
+                    value={supportMessage}
+                    onChange={(e) => setSupportMessage(e.target.value)}
+                    placeholder={supportType === 'support' ? "Describe el problema que has encontrado..." : "Cuéntanos qué te gustaría ver en la app..."}
+                    className="w-full h-32 px-6 py-4 bg-white/50 rounded-2xl outline-none border-2 border-transparent focus:border-indigo-300 transition-all font-bold text-slate-700 shadow-inner resize-none"
+                  />
+                  <AnimatePresence>
+                    {isSent ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="absolute inset-0 bg-emerald-500/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center text-white p-4"
+                      >
+                        <CheckCircle2 size={32} className="mb-2" />
+                        <p className="font-black uppercase tracking-widest text-[10px]">¡Enviado con éxito!</p>
+                        <p className="text-[9px] font-medium opacity-80 mt-1">Gracias por ayudarnos a mejorar.</p>
+                      </motion.div>
+                    ) : (
+                      <button
+                        onClick={handleSendSupport}
+                        disabled={!supportMessage.trim()}
+                        className="absolute bottom-4 right-4 p-3 bg-indigo-500 text-white rounded-xl shadow-lg hover:bg-indigo-600 transition-all disabled:opacity-30 group"
+                      >
+                        <Send size={18} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                      </button>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
-      {/* MODAL ZOOM */}
-      <AnimatePresence>
-        {zoomedGraph && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-10">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setZoomedGraph(null)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl"
-            />
-            <motion.div 
-              layoutId={zoomedGraph}
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="relative w-full max-w-5xl aspect-video glass rounded-[3rem] p-8 md:p-12 shadow-2xl border border-white/40 flex flex-col"
-            >
-              <button 
-                onClick={() => setZoomedGraph(null)}
-                className="absolute top-6 right-6 p-3 bg-white/50 rounded-full text-slate-400 hover:text-rose-500 transition-all shadow-sm"
-              >
-                <X size={24} />
-              </button>
-              
-              <div className="flex items-center gap-4 mb-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl ${zoomedGraph === 'total' ? 'bg-indigo-500' : 'bg-emerald-500'}`}>
-                  {zoomedGraph === 'total' ? <TrendingUp size={32} /> : <BookOpen size={32} />}
-                </div>
-                <div>
-                  <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">
-                    {zoomedGraph === 'total' ? 'Análisis Temporal Total' : 'Distribución por Materia'}
-                  </h2>
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Visualización de puntos de concentración</p>
-                </div>
-              </div>
-
-              <div className="flex-1 min-h-0 bg-white/30 rounded-[2rem] p-8 border border-white/40">
-                {zoomedGraph === 'total' ? (
-                  <DotPlot data={statsData.totalByWeek} color="#6366f1" isLarge />
-                ) : (
-                  <SubjectDotPlot isLarge />
-                )}
-              </div>
-
-              <div className="mt-8 flex justify-between items-center">
-                 <div className="flex gap-6">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Sesiones</span>
-                      <span className="text-xl font-bold text-slate-700">{sessions.length}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Total</span>
-                      <span className="text-xl font-bold text-slate-700">{Math.round(sessions.reduce((acc, s) => acc + s.duration, 0) / 3600)}h</span>
-                    </div>
-                 </div>
-                 {zoomedGraph === 'subject' && (
-                    <div className="flex gap-4">
-                       {subjects.map(s => (
-                         <div key={s.id} className="flex items-center gap-2 px-3 py-1.5 bg-white/50 rounded-lg border border-white/50 shadow-sm">
-                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
-                           <span className="text-[10px] font-black text-slate-600 uppercase">{s.name}</span>
-                         </div>
-                       ))}
-                    </div>
-                 )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <footer className="text-center pt-10">
+        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
+          Tus cambios se guardan automáticamente.
+        </p>
+      </footer>
     </div>
   );
 };
 
-export default StatsView;
+export default SettingsView;
+
