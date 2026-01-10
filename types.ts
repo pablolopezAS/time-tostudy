@@ -48,6 +48,7 @@ export interface UserProfile {
   age: string;
   educationLevel: string;
   activationExpiry?: string;
+  termsAccepted?: boolean;
 }
 
 export type AppView = 'dashboard' | 'focus' | 'history' | 'summary' | 'subject-detail' | 'archived' | 'settings';
@@ -69,4 +70,5 @@ export interface AppState {
   intervalPresets: IntervalPreset[];
   userProfile?: UserProfile;
   tourState: Record<string, boolean>;
+  restoredSession?: any;
 }
