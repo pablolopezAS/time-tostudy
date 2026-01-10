@@ -11,11 +11,15 @@ import {
   X,
   ChevronRight,
   Printer,
-  Loader2
+  Loader2,
+  Edit2,
+  Check,
+  Filter
 } from 'lucide-react';
-import { Subject, Session } from '../types';
+import { Subject, Session, Topic } from '../types';
 import PieChart from './PieChart';
 import LineChart from './LineChart';
+import { supabase } from '../lib/supabase';
 
 interface SubjectDetailProps {
   subject: Subject;
@@ -29,6 +33,30 @@ const SubjectDetailView: React.FC<SubjectDetailProps> = ({ subject, sessions, on
   const [filterTopicId, setFilterTopicId] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [selectedTopicsForPie, setSelectedTopicsForPie] = useState<string[]>([]);
+  const [isEditingSubject, setIsEditingSubject] = useState(false);
+  const [editedSubjectName, setEditedSubjectName] = useState(subject.name);
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [editedTopicName, setEditedTopicName] = useState('');
+
+  const handleUpdateSubjectName = async () => {
+    if (!editedSubjectName.trim()) return;
+    await supabase.from('subjects').update({ name: editedSubjectName }).eq('id', subject.id);
+    subject.name = editedSubjectName; // Optimistic update
+    setIsEditingSubject(false);
+  };
+
+  const handleUpdateTopicName = async (topicId: string) => {
+    if (!editedTopicName.trim()) return;
+    await supabase.from('topics').update({ name: editedTopicName }).eq('id', topicId);
+    const topic = subject.topics.find(t => t.id === topicId);
+    if (topic) topic.name = editedTopicName; // Optimistic
+    setEditingTopicId(null);
+  };
+
+  const startEditingTopic = (t: Topic) => {
+    setEditingTopicId(t.id);
+    setEditedTopicName(t.name);
+  };
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -116,16 +144,36 @@ const SubjectDetailView: React.FC<SubjectDetailProps> = ({ subject, sessions, on
   const pieChartData = useMemo(() => {
     if (selectedTopicsForPie.length === 0) return [];
 
-    return selectedTopicsForPie.map(topicId => {
+    return selectedTopicsForPie.map((topicId, index) => {
       const topic = subject.topics.find(t => t.id === topicId);
       const time = viewStats.topicMap[topicId] || 0;
+
+      // Generate distinct color variants based on subject color
+      // Simplified approach: adjust lightness/hue
       return {
         label: topic?.name || 'Unknown',
         value: time / 3600, // Convert to hours
-        color: subject.color
+        color: index % 2 === 0 ? subject.color : `${subject.color}aa` // Fallback or use a better palette generator if possible
       };
     });
   }, [selectedTopicsForPie, viewStats.topicMap, subject]);
+
+  // Helper to generate distinct colors for chart
+  const getTopicColor = (index: number, baseColor: string) => {
+    const variants = [
+      baseColor,
+      '#94a3b8',
+      '#475569',
+      '#cbd5e1'
+    ];
+    // Since we can't easily manipulate hex without a library, we'll try to use opacity or just alternate
+    // A better way is to use a predefined palette or just rely on the base list from Dashboard if available
+    // For now, let's use a simple opacity trick via CSS hex alpha if supported, or just use the base color
+    // The user specifically asked for DIFFERENT colors. 
+    // Let's use a simple distinct palette relative to the index
+    const palette = ['#818cf8', '#f87171', '#34d399', '#fbbf24', '#a78bfa', '#f472b6', '#22d3ee', '#fb923c'];
+    return palette[index % palette.length];
+  };
 
   // Monthly trend data (hours per day)
   const monthlyTrendData = useMemo(() => {
@@ -144,6 +192,14 @@ const SubjectDetailView: React.FC<SubjectDetailProps> = ({ subject, sessions, on
 
     return dailyData;
   }, [sessions, navDate]);
+
+  // Update pieChartData color logic to use getTopicColor
+  const pieChartDataFinal = useMemo(() => {
+    return pieChartData.map((d, i) => ({
+      ...d,
+      color: getTopicColor(i, subject.color)
+    }));
+  }, [pieChartData, subject.color]);
 
   const maxWeekTime = Math.max(...(Object.values(viewStats.weekMap) as number[]), 1);
   const maxTopicTime = Math.max(...(Object.values(viewStats.topicMap) as number[]), 1);
@@ -212,7 +268,23 @@ const SubjectDetailView: React.FC<SubjectDetailProps> = ({ subject, sessions, on
           <div>
             <div className="flex items-center gap-2 mb-1">
               <div className="w-4 h-4 rounded-full" style={{ backgroundColor: subject.color }} />
-              <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{subject.name}</h1>
+              {isEditingSubject ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={editedSubjectName}
+                    onChange={(e) => setEditedSubjectName(e.target.value)}
+                    className="text-2xl font-black text-slate-800 uppercase tracking-tight bg-white/50 border-b-2 border-indigo-500 outline-none w-full"
+                    onKeyDown={(e) => e.key === 'Enter' && handleUpdateSubjectName()}
+                  />
+                  <button onClick={handleUpdateSubjectName} className="p-1 bg-emerald-100 text-emerald-600 rounded-lg"><Check size={20} /></button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight">{subject.name}</h1>
+                  <button onClick={() => setIsEditingSubject(true)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-500 transition-all"><Edit2 size={16} /></button>
+                </div>
+              )}
             </div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
               {filterWeek ? filterWeek : currentMonthKey}
@@ -316,36 +388,67 @@ const SubjectDetailView: React.FC<SubjectDetailProps> = ({ subject, sessions, on
           <div className="w-full lg:w-1/2 space-y-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Selecciona apartados para comparar:</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-              {subject.topics.map(topic => (
-                <label
-                  key={topic.id}
-                  className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${selectedTopicsForPie.includes(topic.id)
+              {subject.topics.map((topic, index) => (
+                <div key={topic.id} className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      if (filterTopicId === topic.id) setFilterTopicId(null);
+                      else setFilterTopicId(topic.id);
+                    }}
+                    className={`p-2 rounded-xl transition-all ${filterTopicId === topic.id ? 'bg-indigo-600 text-white' : 'bg-white/40 text-slate-400 hover:text-indigo-500'}`}
+                    title="Filtrar vista por este apartado"
+                  >
+                    <Filter size={14} />
+                  </button>
+                  <label
+                    className={`flex-1 flex items-center justify-between gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${selectedTopicsForPie.includes(topic.id)
                       ? 'bg-indigo-50 border-indigo-200'
                       : 'bg-white/40 border-transparent hover:border-slate-200'
-                    }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTopicsForPie.includes(topic.id)}
-                    onChange={() => toggleTopicForPie(topic.id)}
-                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className={`text-xs font-bold truncate ${selectedTopicsForPie.includes(topic.id) ? 'text-indigo-700' : 'text-slate-600'}`}>
-                    {topic.name}
-                  </span>
-                </label>
+                      }`}
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <input
+                        type="checkbox"
+                        checked={selectedTopicsForPie.includes(topic.id)}
+                        onChange={() => toggleTopicForPie(topic.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
+                      />
+                      {editingTopicId === topic.id ? (
+                        <div className="flex items-center gap-1 min-w-0" onClick={e => e.preventDefault()}>
+                          <input
+                            value={editedTopicName}
+                            onChange={e => setEditedTopicName(e.target.value)}
+                            className="w-full text-xs font-bold bg-white border-b border-indigo-500 outline-none"
+                            onKeyDown={e => e.key === 'Enter' && handleUpdateTopicName(topic.id)}
+                            onClick={e => e.stopPropagation()}
+                          />
+                          <button onClick={(e) => { e.stopPropagation(); handleUpdateTopicName(topic.id); }} className="text-emerald-500"><Check size={14} /></button>
+                        </div>
+                      ) : (
+                        <span className={`text-xs font-bold truncate ${selectedTopicsForPie.includes(topic.id) ? 'text-indigo-700' : 'text-slate-600'}`}>
+                          {topic.name}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                  {!editingTopicId && (
+                    <button onClick={() => startEditingTopic(topic)} className="p-2 text-slate-300 hover:text-indigo-500 transition-colors">
+                      <Edit2 size={12} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
 
           <div className="w-full lg:w-1/2 flex flex-col items-center justify-center pt-4 lg:pt-0">
-            {pieChartData.length > 0 ? (
+            {pieChartDataFinal.length > 0 ? (
               <>
-                <PieChart data={pieChartData} size={220} />
+                <PieChart data={pieChartDataFinal} size={220} />
                 <div className="mt-6 text-center">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tiempo Total Seleccionado</p>
                   <p className="text-2xl font-black text-slate-700">
-                    {formatTime(pieChartData.reduce((sum, item) => sum + (item.value * 3600), 0))}
+                    {formatTime(pieChartDataFinal.reduce((sum, item) => sum + (item.value * 3600), 0))}
                   </p>
                 </div>
               </>
