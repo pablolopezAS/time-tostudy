@@ -1,6 +1,6 @@
-
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,18 +8,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              slate: {
-                850: '#151e2e',
-              }
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            slate: {
+                                850: '#151e2e',
+                            }
+                        }
+                    }
+                }
             }
-          }
         }
-      }
     </script>
     <style>
         body {
@@ -28,6 +30,7 @@
             overflow: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         .mesh-gradient {
             background: linear-gradient(135deg, #e6e6fa 0%, #f0fff4 25%, #fff5f5 50%, #f0f7ff 75%, #e6e6fa 100%);
             background-size: 400% 400%;
@@ -40,15 +43,26 @@
             z-index: -1;
             transition: opacity 0.5s ease;
         }
+
         .dark .mesh-gradient {
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
             background-size: 200% 200%;
         }
+
         @keyframes meshAnimation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
+
         .glass {
             background: rgba(255, 255, 255, 0.35);
             backdrop-filter: blur(12px);
@@ -56,82 +70,109 @@
             border: 1px solid rgba(255, 255, 255, 0.4);
             transition: all 0.3s ease;
         }
+
         .dark .glass {
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .dark h1, .dark h2, .dark h3, .dark h4, .dark p, .dark span, .dark div {
-             /* Base color adjust for dark mode is handled by tailwind classes usually, but we set a default here just in case */
+
+        .dark h1,
+        .dark h2,
+        .dark h3,
+        .dark h4,
+        .dark p,
+        .dark span,
+        .dark div {
+            /* Base color adjust for dark mode is handled by tailwind classes usually, but we set a default here just in case */
         }
+
         .neumorphic-in {
             box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.05), inset -4px -4px 8px rgba(255, 255, 255, 0.8);
         }
+
         .neumorphic-out {
             box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.05), -6px -6px 12px rgba(255, 255, 255, 0.8);
         }
+
         ::-webkit-scrollbar {
             width: 6px;
         }
+
         ::-webkit-scrollbar-track {
             background: transparent;
         }
+
         ::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.1);
+            background: rgba(0, 0, 0, 0.1);
             border-radius: 10px;
         }
+
         .dark ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         /* Estilos específicos para impresión (PDF) */
         @media print {
+
             /* Forzar que los contenedores de la App se expandan */
-            html, body, #root, .h-screen, main, .overflow-hidden {
+            html,
+            body,
+            #root,
+            .h-screen,
+            main,
+            .overflow-hidden {
                 height: auto !important;
                 overflow: visible !important;
                 position: relative !important;
                 display: block !important;
             }
-            
-            .no-print, nav, aside, button, .mesh-gradient, .no-print * {
+
+            .no-print,
+            nav,
+            aside,
+            button,
+            .mesh-gradient,
+            .no-print * {
                 display: none !important;
             }
-            
+
             body {
                 background: white !important;
                 color: black !important;
                 padding: 0;
                 margin: 0;
             }
-            
+
             .print-only {
                 display: block !important;
             }
-            
+
             .glass {
                 background: transparent !important;
                 border: 1px solid #eee !important;
                 backdrop-filter: none !important;
                 box-shadow: none !important;
             }
-            
+
             .page-break {
                 page-break-after: always;
                 margin-top: 2rem;
             }
-            
-            .text-indigo-600, .text-indigo-500 {
+
+            .text-indigo-600,
+            .text-indigo-500 {
                 color: #4f46e5 !important;
             }
-            
+
             /* Asegurar que las barras de progreso se vean en el PDF */
-            .bg-indigo-400, .bg-emerald-400 {
+            .bg-indigo-400,
+            .bg-emerald-400 {
                 print-color-adjust: exact;
                 -webkit-print-color-adjust: exact;
             }
         }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -143,11 +184,13 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/index.css">
 </head>
+
 <body class="text-slate-800">
     <div class="mesh-gradient"></div>
     <div id="root"></div>
-<script type="module" src="/index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>
