@@ -103,8 +103,14 @@ const SessionSummary: React.FC<SummaryProps> = ({ session, subject, topic, onFin
           value={finalNotes}
           onChange={e => setFinalNotes(e.target.value)}
           placeholder="¿Qué has aprendido hoy? ¿Qué te ha costado más?..."
+          maxLength={500}
           className="w-full h-48 p-6 glass rounded-[2rem] border border-white/60 outline-none resize-none font-medium text-slate-600 shadow-inner focus:bg-white transition-all"
         />
+        <div className="text-right px-2">
+          <span className={`text-[10px] font-black uppercase tracking-widest ${finalNotes.length >= 450 ? 'text-rose-500' : 'text-slate-400'}`}>
+            {finalNotes.length} / 500
+          </span>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
