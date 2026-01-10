@@ -22,7 +22,9 @@ import SettingsView from './components/SettingsView';
 import OnboardingOverlay from './components/OnboardingOverlay';
 import GuidedTour from './components/GuidedTour';
 import Auth from './components/Auth';
-import TermsAndConditions from './components/TermsAndConditions';
+import LandingPage from './components/LandingPage';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import LegalTerms from './components/LegalTerms';
 import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
@@ -565,13 +567,13 @@ const App: React.FC = () => {
   }
 
   if (!session) {
-    return <Auth onSuccess={() => { }} />;
+    return <LandingPage onAuthSuccess={() => { }} />;
   }
 
   return (
     <div className="relative h-screen w-full flex flex-col md:flex-row overflow-hidden bg-slate-50/50 dark:bg-slate-900/50 dark:text-slate-200 transition-colors duration-300">
       <AnimatePresence>
-        {showTerms && <TermsAndConditions onAccept={handleAcceptTerms} />}
+        {showTerms && <LegalTerms onAccept={handleAcceptTerms} />}
       </AnimatePresence>
 
       <AnimatePresence>
@@ -600,6 +602,9 @@ const App: React.FC = () => {
       </nav>
 
       <main className="flex-1 overflow-hidden relative min-h-0">
+        <div className="absolute top-4 right-4 z-[100]">
+          <PWAInstallPrompt />
+        </div>
         <AnimatePresence mode="wait">
           <motion.div
             key={state.view}
