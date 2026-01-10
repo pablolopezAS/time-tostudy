@@ -7,11 +7,26 @@
     <title>TimeToStudy - Focus with Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              slate: {
+                850: '#151e2e',
+              }
+            }
+          }
+        }
+      }
+    </script>
     <style>
         body {
             font-family: 'Outfit', sans-serif;
             margin: 0;
             overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .mesh-gradient {
             background: linear-gradient(135deg, #e6e6fa 0%, #f0fff4 25%, #fff5f5 50%, #f0f7ff 75%, #e6e6fa 100%);
@@ -23,6 +38,11 @@
             width: 100%;
             height: 100%;
             z-index: -1;
+            transition: opacity 0.5s ease;
+        }
+        .dark .mesh-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            background-size: 200% 200%;
         }
         @keyframes meshAnimation {
             0% { background-position: 0% 50%; }
@@ -34,6 +54,14 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .dark h1, .dark h2, .dark h3, .dark h4, .dark p, .dark span, .dark div {
+             /* Base color adjust for dark mode is handled by tailwind classes usually, but we set a default here just in case */
         }
         .neumorphic-in {
             box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.05), inset -4px -4px 8px rgba(255, 255, 255, 0.8);
@@ -50,6 +78,9 @@
         ::-webkit-scrollbar-thumb {
             background: rgba(0,0,0,0.1);
             border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
         }
 
         /* Estilos específicos para impresión (PDF) */
