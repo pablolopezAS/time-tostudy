@@ -471,8 +471,8 @@ const HistoryView: React.FC<HistoryProps> = ({ sessions, subjects }) => {
                     </div>
                     {session.notes && (
                       <div className="mt-1 px-4 py-3 bg-white/40 rounded-2xl border border-white/40 print:bg-slate-50 print:border-slate-100">
-                        <p className="text-xs text-slate-500 italic leading-relaxed">
-                          "{session.notes}"
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                          {session.notes}
                         </p>
                       </div>
                     )}
