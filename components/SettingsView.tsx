@@ -400,3 +400,85 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
+              onClick={() => setPwaDevice(pwaDevice === 'apple' ? null : 'apple')}
+              className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${pwaDevice === 'apple' ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg' : 'bg-white/40 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200 border-white/60 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}`}
+            >
+              <div className="flex items-center gap-4">
+                <Apple size={20} />
+                <span className="font-bold">Soy de Apple</span>
+              </div>
+              <ChevronRight size={18} className={pwaDevice === 'apple' ? 'rotate-90 transition-transform' : ''} />
+            </button>
+
+            <button
+              onClick={() => setPwaDevice(pwaDevice === 'android' ? null : 'android')}
+              className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${pwaDevice === 'android' ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg' : 'bg-white/40 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200 border-white/60 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}`}
+            >
+              <div className="flex items-center gap-4">
+                <AndroidPhone size={20} />
+                <span className="font-bold">Soy de Android</span>
+              </div>
+              <ChevronRight size={18} className={pwaDevice === 'android' ? 'rotate-90 transition-transform' : ''} />
+            </button>
+          </div>
+
+          <AnimatePresence>
+            {pwaDevice && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-6 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30 space-y-4">
+                  {pwaDevice === 'apple' ? (
+                    <div className="space-y-3">
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Para iPhone o iPad:</p>
+                      <ul className="space-y-2">
+                        {[
+                          'Abre TimeToStudy en Safari',
+                          'Toca el botón "Compartir" (cuadrado con flecha)',
+                          'Busca "Añadir a la pantalla de inicio"',
+                          'Toca "Añadir" arriba a la derecha'
+                        ].map((step, i) => (
+                          <li key={i} className="flex gap-3 text-xs text-slate-600 dark:text-slate-400 items-center">
+                            <span className="w-5 h-5 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center font-bold border border-slate-100 dark:border-slate-700">{i + 1}</span>
+                            {step}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Para Android o Chrome:</p>
+                      <ul className="space-y-2">
+                        {[
+                          'Toca los tres puntos (⋮) del navegador',
+                          'Busca "Instalar aplicación" o "Añadir a pantalla de inicio"',
+                          'Confirma la instalación'
+                        ].map((step, i) => (
+                          <li key={i} className="flex gap-3 text-xs text-slate-600 dark:text-slate-400 items-center">
+                            <span className="w-5 h-5 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center font-bold border border-slate-100 dark:border-slate-700">{i + 1}</span>
+                            {step}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+      </div>
+
+      <footer className="text-center pt-10">
+        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
+          Tus cambios se guardan automáticamente.
+        </p>
+      </footer>
+    </div>
+  );
+};
+
+export default SettingsView;
