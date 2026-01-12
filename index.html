@@ -27,8 +27,8 @@
         body {
             font-family: 'Outfit', sans-serif;
             margin: 0;
-            overflow: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
+            scroll-behavior: smooth;
         }
 
         .mesh-gradient {
@@ -72,8 +72,9 @@
         }
 
         .dark .glass {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
         }
 
         .dark h1,
@@ -81,9 +82,8 @@
         .dark h3,
         .dark h4,
         .dark p,
-        .dark span,
-        .dark div {
-            /* Base color adjust for dark mode is handled by tailwind classes usually, but we set a default here just in case */
+        .dark span {
+            color: #f1f5f9;
         }
 
         .neumorphic-in {
@@ -92,6 +92,14 @@
 
         .neumorphic-out {
             box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.05), -6px -6px 12px rgba(255, 255, 255, 0.8);
+        }
+
+        .dark .neumorphic-in {
+            box-shadow: inset 4px 4px 8px rgba(0, 0, 0, 0.3), inset -4px -4px 8px rgba(255, 255, 255, 0.02);
+        }
+
+        .dark .neumorphic-out {
+            box-shadow: 6px 6px 12px rgba(0, 0, 0, 0.3), -6px -6px 12px rgba(255, 255, 255, 0.02);
         }
 
         ::-webkit-scrollbar {
