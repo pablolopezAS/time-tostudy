@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserProfile } from '../types';
-import { User, GraduationCap, Calendar, ShieldCheck, Mail, Lock, MessageSquare, Sparkles, Send, CheckCircle2, Loader2, LogOut, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { User, GraduationCap, Calendar, ShieldCheck, Mail, Lock, MessageSquare, Sparkles, Send, CheckCircle2, Loader2, LogOut, Eye, EyeOff, ShieldAlert, Download, Apple, Smartphone as AndroidPhone, Share, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SettingsViewProps {
@@ -21,6 +21,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
   const [newPassword, setNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [passUpdateStatus, setPassUpdateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [pwaDevice, setPwaDevice] = useState<'apple' | 'android' | null>(null);
 
   const educationLevels = [
     'ESO',
@@ -112,8 +113,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-10 pb-40">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase">Ajustes</h1>
-          <p className="text-slate-500 font-medium italic text-sm">Personaliza tu perfil de estudiante.</p>
+          <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight uppercase">Ajustes</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium italic text-sm">Personaliza tu perfil de estudiante.</p>
         </div>
         <div className="flex items-center gap-4">
           {updating && (
@@ -135,7 +136,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
         <section className="glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
           <div className="flex items-center gap-3 mb-2">
             <User size={20} className="text-indigo-500" />
-            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Información Personal</h2>
+            <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Información Personal</h2>
           </div>
 
           <div className="space-y-6">
@@ -177,7 +178,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
         <section className="glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
           <div className="flex items-center gap-3 mb-2">
             <Sparkles size={20} className="text-amber-500" />
-            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Apariencia</h2>
+            <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Apariencia</h2>
           </div>
 
           <div className="space-y-6">
@@ -210,7 +211,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
         <section className="glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
           <div className="flex items-center gap-3 mb-2">
             <GraduationCap size={20} className="text-emerald-500" />
-            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Trayectoria Académica</h2>
+            <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Trayectoria Académica</h2>
           </div>
 
           <div className="space-y-6">
@@ -245,7 +246,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
         <section className="md:col-span-2 glass rounded-[2.5rem] p-8 border border-white/60 space-y-6">
           <div className="flex items-center gap-3 mb-2">
             <ShieldCheck size={20} className="text-indigo-500" />
-            <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Seguridad</h2>
+            <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Seguridad</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -302,8 +303,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
                 <ShieldCheck size={32} />
               </div>
               <div>
-                <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Estado de la Suscripción</h2>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Información de activación del sistema</p>
+                <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Estado de la Suscripción</h2>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Información de activación del sistema</p>
               </div>
             </div>
 
@@ -324,7 +325,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
               <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center">
                 <MessageSquare size={20} />
               </div>
-              <h2 className="text-lg font-black text-slate-700 uppercase tracking-tight">Soporte y Sugerencias</h2>
+              <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Soporte y Sugerencias</h2>
             </div>
             <Sparkles size={18} className="text-amber-400 animate-pulse" />
           </div>
@@ -387,16 +388,15 @@ const SettingsView: React.FC<SettingsViewProps> = ({ profile, onUpdate, onInterv
             </div>
           </div>
         </section>
-      </div>
 
-      <footer className="text-center pt-10">
-        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
-          Tus cambios se guardan automáticamente.
-        </p>
-      </footer>
-    </div>
-  );
-};
+        {/* SECCIÓN PWA */}
+        <section className="md:col-span-2 glass rounded-[2.5rem] p-8 border border-white/60 space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-xl flex items-center justify-center">
+              <Download size={20} />
+            </div>
+            <h2 className="text-lg font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">¿Cómo añadir a la página de inicio?</h2>
+          </div>
 
-export default SettingsView;
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
