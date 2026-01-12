@@ -85,11 +85,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       {/* BRAND HEADER CON ESLOGAN EN ESPAÑOL */}
       <header className="flex flex-col items-center md:items-start space-y-3 mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-100 ring-4 ring-white">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20 dark:shadow-none ring-4 ring-white dark:ring-slate-800">
             <Clock className="w-6 h-6 md:w-7 md:h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800 tracking-tight leading-none">
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white tracking-tight leading-none">
               <span className="text-indigo-600">T</span>ime<span className="text-indigo-600">T</span>o<span className="text-indigo-600">S</span>tudy
             </h1>
             <p className="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1.5 ml-0.5">
@@ -103,7 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         onClick={() => setShowStartPicker(true)}
-        className="w-full relative group overflow-hidden p-12 md:p-20 rounded-[2.5rem] md:rounded-[3.5rem] bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 text-white shadow-2xl shadow-indigo-200 flex items-center justify-center border-4 border-white/20"
+        className="w-full relative group overflow-hidden p-12 md:p-20 rounded-[2.5rem] md:rounded-[3.5rem] bg-gradient-to-br from-indigo-600 via-indigo-500 to-indigo-700 text-white shadow-2xl shadow-indigo-500/20 dark:shadow-none flex items-center justify-center border-4 border-white/20"
       >
         <div className="relative z-10 text-center">
           <h2 className="text-5xl md:text-8xl font-black tracking-[0.15em] uppercase leading-none">Estudiar</h2>
@@ -116,7 +116,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         <div className="flex items-center justify-between mb-6 md:mb-8 px-2">
           <div className="flex items-center gap-3">
             <BarChart2 className="text-slate-400" size={20} />
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 uppercase tracking-tight">Tus Asignaturas</h3>
+            <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Tus Asignaturas</h3>
           </div>
           <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{subjects.length} Activas</span>
         </div>
@@ -133,7 +133,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <BookOpen size={24} />
                   </div>
                   <div>
-                    <h4 className="font-black text-lg text-slate-700 truncate max-w-[140px] leading-tight">{subject.name}</h4>
+                    <h4 className="font-black text-lg text-slate-700 dark:text-slate-200 truncate max-w-[140px] leading-tight">{subject.name}</h4>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subject.topics.length} temas</p>
                   </div>
                 </div>
@@ -204,8 +204,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <div className="space-y-8">
                   <header className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-3xl md:text-4xl font-black text-slate-800 uppercase tracking-tight">Elige Enfoque</h2>
-                      <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">¿Qué vamos a estudiar hoy?</p>
+                      <h2 className="text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Elige Enfoque</h2>
+                      <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">¿Qué vamos a estudiar hoy?</p>
                     </div>
                     <button onClick={resetPicker} className="p-3 bg-slate-100 text-slate-400 rounded-full hover:bg-rose-50 hover:text-rose-500 transition-all">
                       <X size={24} />
@@ -283,8 +283,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                     >
                       <Sparkles size={40} fill="white" />
                     </div>
-                    <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Elige tu Ritmo</h2>
-                    <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mt-1">{selectedSubForSession?.name} • {subjects.find(s => s.id === selectedSubForSession?.id)?.topics.find(t => t.id === selectedTopicId)?.name}</p>
+                    <h2 className="text-3xl font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Elige tu Ritmo</h2>
+                    <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-1">{selectedSubForSession?.name} • {subjects.find(s => s.id === selectedSubForSession?.id)?.topics.find(t => t.id === selectedTopicId)?.name}</p>
                   </header>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
