@@ -188,6 +188,9 @@ const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
                             <p className="text-slate-500 text-sm font-medium leading-relaxed mb-2">
                                 Te hemos enviado un correo de confirmación desde <span className="text-indigo-600 font-bold">timetostudy@outlook.es</span>.
                             </p>
+                            <p className="text-slate-500 text-sm font-medium leading-relaxed mb-2">
+                                El correo puede tardar unos minutos en llegar.
+                            </p>
                             <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
                                 Si no encuentras el correo, revisa la carpeta de <span className="text-amber-600 font-bold">SPAM</span>.
                             </p>
