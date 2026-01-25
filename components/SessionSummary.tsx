@@ -15,10 +15,12 @@ interface SummaryProps {
 const SessionSummary: React.FC<SummaryProps> = ({ session, subject, topic, onFinalize, onResume }) => {
   const [finalNotes, setFinalNotes] = useState(session.notes || '');
 
-  // Estados para edición de tiempo
-  const [studyMin, setStudyMin] = useState(Math.floor((session.duration || 0) / 60));
+  // Estados para edición de tiempo (horas, minutos y segundos)
+  const [studyHours, setStudyHours] = useState(Math.floor((session.duration || 0) / 3600));
+  const [studyMin, setStudyMin] = useState(Math.floor(((session.duration || 0) % 3600) / 60));
   const [studySec, setStudySec] = useState((session.duration || 0) % 60);
-  const [pauseMin, setPauseMin] = useState(Math.floor((session.pauseDuration || 0) / 60));
+  const [pauseHours, setPauseHours] = useState(Math.floor((session.pauseDuration || 0) / 3600));
+  const [pauseMin, setPauseMin] = useState(Math.floor(((session.pauseDuration || 0) % 3600) / 60));
   const [pauseSec, setPauseSec] = useState((session.pauseDuration || 0) % 60);
 
   const handleFinish = () => {
@@ -29,36 +31,50 @@ const SessionSummary: React.FC<SummaryProps> = ({ session, subject, topic, onFin
       ...session,
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      duration: studyMin * 60 + studySec,
-      pauseDuration: pauseMin * 60 + pauseSec,
+      duration: studyHours * 3600 + studyMin * 60 + studySec,
+      pauseDuration: pauseHours * 3600 + pauseMin * 60 + pauseSec,
       notes: finalNotes
     } as Session);
   };
 
-  const TimeInput = ({ label, min, sec, setMin, setSec, icon: Icon, colorClass }: any) => (
+  const TimeInput = ({ label, hours, min, sec, setHours, setMin, setSec, icon: Icon, colorClass }: any) => (
     <div className="glass p-6 rounded-3xl border border-white/60 flex flex-col items-center transition-all hover:bg-white/50 group">
       <div className={`flex items-center gap-2 ${colorClass} mb-3`}>
         <Icon size={16} />
         <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
       </div>
-      <div className="flex items-center gap-2 relative">
+      <div className="flex items-center gap-1 relative">
         <div className="flex flex-col items-center">
           <input
             type="number"
+            min="0"
+            value={hours}
+            onChange={e => setHours(Math.max(0, parseInt(e.target.value) || 0))}
+            className="w-12 bg-white/50 text-center text-xl font-bold rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+          />
+          <span className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-widest">HOR</span>
+        </div>
+        <span className="text-lg font-bold text-slate-400 pb-5">:</span>
+        <div className="flex flex-col items-center">
+          <input
+            type="number"
+            min="0"
+            max="59"
             value={min}
-            onChange={e => setMin(Math.max(0, parseInt(e.target.value) || 0))}
-            className="w-16 bg-white/50 text-center text-2xl font-bold rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+            onChange={e => setMin(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
+            className="w-12 bg-white/50 text-center text-xl font-bold rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
           />
           <span className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-widest">MIN</span>
         </div>
-        <span className="text-xl font-bold text-slate-400 pb-5">:</span>
+        <span className="text-lg font-bold text-slate-400 pb-5">:</span>
         <div className="flex flex-col items-center">
           <input
             type="number"
+            min="0"
             max="59"
             value={sec}
             onChange={e => setSec(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
-            className="w-16 bg-white/50 text-center text-2xl font-bold rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
+            className="w-12 bg-white/50 text-center text-xl font-bold rounded-xl py-2 outline-none focus:ring-2 focus:ring-indigo-300 transition-all"
           />
           <span className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-widest">SEG</span>
         </div>
@@ -82,14 +98,14 @@ const SessionSummary: React.FC<SummaryProps> = ({ session, subject, topic, onFin
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
         <TimeInput
           label="Tiempo Estudio"
-          min={studyMin} sec={studySec}
-          setMin={setStudyMin} setSec={setStudySec}
+          hours={studyHours} min={studyMin} sec={studySec}
+          setHours={setStudyHours} setMin={setStudyMin} setSec={setStudySec}
           icon={Clock} colorClass="text-indigo-500"
         />
         <TimeInput
           label="Tiempo Pausa"
-          min={pauseMin} sec={pauseSec}
-          setMin={setPauseMin} setSec={setPauseSec}
+          hours={pauseHours} min={pauseMin} sec={pauseSec}
+          setHours={setPauseHours} setMin={setPauseMin} setSec={setPauseSec}
           icon={PauseCircle} colorClass="text-rose-400"
         />
       </div>
