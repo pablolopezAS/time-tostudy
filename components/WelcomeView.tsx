@@ -300,9 +300,16 @@ const WelcomeView: React.FC<WelcomeViewProps> = ({ onAuthSuccess }) => {
                     </div>
                     <span className="text-white font-bold">TimeToStudy</span>
                 </div>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-400 text-sm mb-3">
                     © {new Date().getFullYear()} TimeToStudy. Todos los derechos reservados.
                 </p>
+                <a
+                    href="mailto:timetostudy@outlook.es"
+                    className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 text-sm font-medium transition-colors"
+                >
+                    <Mail size={16} />
+                    Contacto: timetostudy@outlook.es
+                </a>
             </footer>
 
             {/* Auth Modal */}
@@ -452,6 +459,9 @@ const WelcomeView: React.FC<WelcomeViewProps> = ({ onAuthSuccess }) => {
                             <h2 className="text-2xl font-bold text-slate-800 mb-4">¡Casi listo!</h2>
                             <p className="text-slate-500 text-sm font-medium leading-relaxed mb-2">
                                 Te hemos enviado un correo de confirmación desde <span className="text-indigo-600 font-bold">timetostudy@outlook.es</span>.
+                            </p>
+                            <p className="text-slate-500 text-sm font-medium leading-relaxed mb-2">
+                                El correo puede tardar unos minutos en llegar.
                             </p>
                             <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8">
                                 Si no encuentras el correo, revisa la carpeta de <span className="text-amber-600 font-bold">SPAM</span>.
